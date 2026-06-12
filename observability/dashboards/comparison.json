@@ -1,7 +1,7 @@
 {
-  "title": "BMT — Backend comparison",
+  "title": "BMT — Comparison view",
   "uid": "bmt-comparison",
-  "tags": ["bmt"],
+  "tags": ["bmt", "comparison"],
   "timezone": "utc",
   "schemaVersion": 39,
   "version": 1,

@@ -1,7 +1,7 @@
 {
   "title": "BMT — Mongo VM view",
   "uid": "bmt-mongo-vm",
-  "tags": ["bmt"],
+  "tags": ["bmt", "server", "mongo"],
   "timezone": "utc",
   "schemaVersion": 39,
   "version": 1,

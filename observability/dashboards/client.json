@@ -1,7 +1,7 @@
 {
   "title": "BMT — Client view",
   "uid": "bmt-client",
-  "tags": ["bmt"],
+  "tags": ["bmt", "client"],
   "timezone": "utc",
   "schemaVersion": 39,
   "version": 1,
@@ -11,12 +11,17 @@
     "list": [
       {
         "name": "backend",
-        "type": "query",
-        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-        "query": "label_values(bmt_ops_total, backend)",
-        "refresh": 2,
+        "type": "custom",
+        "query": "docdb,cosmosru,mongo",
         "includeAll": true,
-        "multi": true
+        "multi": true,
+        "current": { "selected": true, "text": ["All"], "value": ["$__all"] },
+        "options": [
+          { "selected": true, "text": "All", "value": "$__all" },
+          { "selected": false, "text": "docdb", "value": "docdb" },
+          { "selected": false, "text": "cosmosru", "value": "cosmosru" },
+          { "selected": false, "text": "mongo", "value": "mongo" }
+        ]
       },
       {
         "name": "scenario",

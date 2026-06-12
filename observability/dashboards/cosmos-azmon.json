@@ -1,0 +1,181 @@
+{
+  "title": "BMT — Cosmos DB view",
+  "uid": "bmt-cosmos-azmon",
+  "tags": ["bmt", "server", "cosmos"],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "subscription",
+        "type": "textbox",
+        "label": "Subscription ID",
+        "query": "01c04f52-ad2b-4cc0-b77b-61508ec58f51",
+        "current": { "text": "01c04f52-ad2b-4cc0-b77b-61508ec58f51", "value": "01c04f52-ad2b-4cc0-b77b-61508ec58f51" }
+      },
+      {
+        "name": "resourceGroup",
+        "type": "textbox",
+        "label": "Resource group",
+        "query": "rg-db-test-hpc",
+        "current": { "text": "rg-db-test-hpc", "value": "rg-db-test-hpc" }
+      },
+      {
+        "name": "cosmos",
+        "type": "textbox",
+        "label": "Cosmos account",
+        "query": "cosmos-dbtest-hpc-0-koreacentral",
+        "current": { "text": "cosmos-dbtest-hpc-0-koreacentral", "value": "cosmos-dbtest-hpc-0-koreacentral" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Normalized RU Consumption (%) — 100% = throttling",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "bmt-azuremonitor" },
+      "fieldConfig": { "defaults": { "unit": "percent", "max": 100, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 80 }, { "color": "red", "value": 95 } ] } } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "bmt-azuremonitor" },
+          "queryType": "Azure Monitor",
+          "subscription": "$subscription",
+          "azureMonitor": {
+            "resources": [ { "subscription": "$subscription", "resourceGroup": "$resourceGroup", "resourceName": "$cosmos", "metricNamespace": "microsoft.documentdb/databaseaccounts" } ],
+            "metricNamespace": "microsoft.documentdb/databaseaccounts",
+            "metricName": "NormalizedRUConsumption",
+            "aggregation": "Maximum",
+            "timeGrain": "auto",
+            "dimensionFilters": []
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Provisioned Throughput (RU/s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "bmt-azuremonitor" },
+      "fieldConfig": { "defaults": { "unit": "none" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "bmt-azuremonitor" },
+          "queryType": "Azure Monitor",
+          "subscription": "$subscription",
+          "azureMonitor": {
+            "resources": [ { "subscription": "$subscription", "resourceGroup": "$resourceGroup", "resourceName": "$cosmos", "metricNamespace": "microsoft.documentdb/databaseaccounts" } ],
+            "metricNamespace": "microsoft.documentdb/databaseaccounts",
+            "metricName": "ProvisionedThroughput",
+            "aggregation": "Maximum",
+            "timeGrain": "auto",
+            "dimensionFilters": []
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Total Request Units consumed (RU)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "bmt-azuremonitor" },
+      "fieldConfig": { "defaults": { "unit": "none" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "bmt-azuremonitor" },
+          "queryType": "Azure Monitor",
+          "subscription": "$subscription",
+          "azureMonitor": {
+            "resources": [ { "subscription": "$subscription", "resourceGroup": "$resourceGroup", "resourceName": "$cosmos", "metricNamespace": "microsoft.documentdb/databaseaccounts" } ],
+            "metricNamespace": "microsoft.documentdb/databaseaccounts",
+            "metricName": "TotalRequestUnits",
+            "aggregation": "Total",
+            "timeGrain": "auto",
+            "dimensionFilters": []
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Mongo Requests by ErrorCode (0 = OK, 16500 = throttled)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "bmt-azuremonitor" },
+      "fieldConfig": { "defaults": { "unit": "none" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "bmt-azuremonitor" },
+          "queryType": "Azure Monitor",
+          "subscription": "$subscription",
+          "azureMonitor": {
+            "resources": [ { "subscription": "$subscription", "resourceGroup": "$resourceGroup", "resourceName": "$cosmos", "metricNamespace": "microsoft.documentdb/databaseaccounts" } ],
+            "metricNamespace": "microsoft.documentdb/databaseaccounts",
+            "metricName": "MongoRequests",
+            "aggregation": "Count",
+            "timeGrain": "auto",
+            "dimensionFilters": [ { "dimension": "ErrorCode", "operator": "eq", "filters": ["*"] } ]
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Mongo Request Charge (RU)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "bmt-azuremonitor" },
+      "fieldConfig": { "defaults": { "unit": "none" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "bmt-azuremonitor" },
+          "queryType": "Azure Monitor",
+          "subscription": "$subscription",
+          "azureMonitor": {
+            "resources": [ { "subscription": "$subscription", "resourceGroup": "$resourceGroup", "resourceName": "$cosmos", "metricNamespace": "microsoft.documentdb/databaseaccounts" } ],
+            "metricNamespace": "microsoft.documentdb/databaseaccounts",
+            "metricName": "MongoRequestCharge",
+            "aggregation": "Total",
+            "timeGrain": "auto",
+            "dimensionFilters": []
+          }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Server Side Latency (ms)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "bmt-azuremonitor" },
+      "fieldConfig": { "defaults": { "unit": "ms" } },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-azure-monitor-datasource", "uid": "bmt-azuremonitor" },
+          "queryType": "Azure Monitor",
+          "subscription": "$subscription",
+          "azureMonitor": {
+            "resources": [ { "subscription": "$subscription", "resourceGroup": "$resourceGroup", "resourceName": "$cosmos", "metricNamespace": "microsoft.documentdb/databaseaccounts" } ],
+            "metricNamespace": "microsoft.documentdb/databaseaccounts",
+            "metricName": "ServerSideLatency",
+            "aggregation": "Average",
+            "timeGrain": "auto",
+            "dimensionFilters": []
+          }
+        }
+      ]
+    }
+  ]
+}
