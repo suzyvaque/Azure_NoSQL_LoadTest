@@ -235,6 +235,12 @@ runs/*
 !runs/README.md
 !runs/.gitkeep
 
+# Seed summary artifacts (machine-generated)
+seeder/runs/
+
+# Local benchmarking tooling (downloaded binaries + runtime data + logs)
+.tools/
+
 # Secrets / local config
 infra/connection-strings.json
 **/*.local.json
