@@ -10,11 +10,12 @@ Install and configure MongoDB 7 on VM2 and create required indexes on all three 
 - WiredTiger cache: default (~50 % RAM = ~128 GB). Do not override.
 - `net.maxIncomingConnections = 5000`, `net.bindIp = 0.0.0.0`, auth enabled with a bench user.
 - Slow query profiler enabled: `db.setProfilingLevel(1, { slowms: 50 })`.
-- Create indexes on `bmt_db.calc_output`:
-  - default `_id`
-  - secondary single-field ascending on `ReqId` (non-unique)
-- Verify indexes on `calc_input` is `_id` only.
-- Idempotent: re-running must not break an existing install.
+- Create database `bmt_db` with collections `calc_input` and `calc_output`.
+- Indexes: **default `_id` only** on both collections. The workload uses a single sequential
+  numeric-string request id `n` as `_id`, and every operation (`find`/`insert`/`remove`) keys
+  on `_id` (IDHACK). No secondary index is needed. A `ReqId` field equal to `_id` is stored for
+  production-schema parity but is intentionally **not** indexed.
+- `create-indexes.js` is idempotent and drops any stray secondary index left by an older plan.
 
 ## Inputs
 
@@ -34,7 +35,20 @@ Install and configure MongoDB 7 on VM2 and create required indexes on all three 
 
 ## To be added
 
-- `install-mongo.sh` (apt repo, install, systemd, RS initiate).
-- `mongod.conf` template.
-- `create-indexes.js` runnable via `mongosh --file` against any backend conn string.
-- `verify.sh` that prints version, RS status, index list, profiler level.
+- `install-mongo.sh` (apt repo, install, systemd, RS initiate). _(deferred — Mongo VM is a later task)_
+- `mongod.conf` template. _(deferred)_
+- `create-indexes.js` runnable via `mongosh --file` against any backend conn string. ✅
+- `verify.sh` that prints version, RS status, index list, profiler level. ✅
+
+## Usage (DocumentDB / Cosmos / Mongo VM)
+
+```
+# create db + collections and enforce _id-only index layout
+mongosh "<connection-string>" --file create-indexes.js
+
+# verify version + indexes (exit 0 = _id indexes only)
+./verify.sh "<connection-string>" [bmt_db]
+```
+
+The database name defaults to `bmt_db`; override with
+`--eval "var DB_NAME='other'"` before `--file`, or pass it as the second arg to `verify.sh`.
