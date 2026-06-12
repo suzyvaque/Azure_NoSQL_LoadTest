@@ -78,8 +78,27 @@ public static class Program
         var database = client.GetDatabase(Names.Database);
         var collection = database.GetCollection<CalcInputDoc>(Names.CalcInput);
 
-        long existing = await collection.CountDocumentsAsync(FilterDefinition<CalcInputDoc>.Empty, cancellationToken: ct)
-            .ConfigureAwait(false);
+        // Read the current document count to support resume. Use the cheap "count" command
+        // (EstimatedDocumentCount) rather than an aggregate-based CountDocuments: under heavy
+        // Cosmos RU throttling (e.g. while a throughput migration is in flight) the aggregate
+        // pipeline is rejected with 429/Substatus 3200, whereas the count command survives.
+        // Retry a few times so a transient throttle on startup does not abort the whole seed.
+        long existing = 0;
+        for (int attempt = 1; ; attempt++)
+        {
+            try
+            {
+                existing = await collection.EstimatedDocumentCountAsync(cancellationToken: ct).ConfigureAwait(false);
+                break;
+            }
+            catch (MongoException ex) when (attempt < 10)
+            {
+                int delayMs = Math.Min(attempt * 1000, 5000);
+                Console.Error.WriteLine(
+                    $"count read throttled (attempt {attempt}/10): {ex.Message.Split('\n')[0]}; retrying in {delayMs} ms");
+                await Task.Delay(delayMs, ct).ConfigureAwait(false);
+            }
+        }
         Console.WriteLine($"existing documents in {Names.Database}.{Names.CalcInput}: {existing:N0}");
 
         long fromId;

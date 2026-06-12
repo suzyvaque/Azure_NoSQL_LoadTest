@@ -11,6 +11,7 @@ namespace Bmt.Seeder;
 public sealed class BulkSeeder
 {
     private const int MaxRetries = 12;
+    private const int MaxThrottleRetries = 200;
     private const int MaxBackoffMs = 5000;
 
     private readonly IMongoCollection<CalcInputDoc> _collection;
@@ -77,12 +78,18 @@ public sealed class BulkSeeder
     private async Task InsertWithRetryAsync(
         IReadOnlyList<CalcInputDoc> batch, InsertManyOptions options, CancellationToken ct)
     {
-        // Cosmos DB (RU) throttles with 429s; an unordered insertMany then partially succeeds.
-        // Retry only the documents that failed for a transient reason, and treat duplicate-key
-        // errors (11000) as already-inserted so the seed stays idempotent and resumable.
+        // Cosmos DB (RU) throttles with 16500/429s (and, while autoscale ramps or a scaling
+        // operation is in flight, transient 13 "Insert error" storms); an unordered insertMany
+        // then partially succeeds. Retry only the documents that failed for a transient reason,
+        // and treat duplicate-key errors (11000) as already-inserted so the seed stays idempotent
+        // and resumable. Throttle-class failures are expected and benign during a 1M-doc seed, so
+        // they get a much larger retry budget than genuine transient errors.
         var pending = batch.ToList();
 
-        for (int attempt = 1; ; attempt++)
+        int throttleAttempts = 0;
+        int transientAttempts = 0;
+
+        for (int round = 1; ; round++)
         {
             try
             {
@@ -91,37 +98,52 @@ public sealed class BulkSeeder
             }
             catch (MongoBulkWriteException<CalcInputDoc> bulk)
             {
-                var retryable = bulk.WriteErrors
+                var retryableErrors = bulk.WriteErrors
                     .Where(e => e.Category != ServerErrorCategory.DuplicateKey && e.Code != 11000)
-                    .Select(e => e.Index)
                     .ToList();
 
-                if (retryable.Count == 0)
+                if (retryableErrors.Count == 0)
                 {
                     // All failures were duplicate-key: every doc is now present.
                     return;
                 }
 
-                if (attempt >= MaxRetries)
+                bool throttleOnly = retryableErrors.All(e => IsThrottleCode(e.Code));
+                if (throttleOnly)
+                {
+                    if (++throttleAttempts >= MaxThrottleRetries)
+                    {
+                        throw;
+                    }
+                }
+                else if (++transientAttempts >= MaxRetries)
                 {
                     throw;
                 }
 
-                pending = retryable.Select(i => pending[i]).ToList();
-                int delayMs = Math.Min((int)(Math.Pow(2, attempt) * 100), MaxBackoffMs);
+                pending = retryableErrors.Select(e => pending[e.Index]).ToList();
+                int delayMs = Math.Min((int)(Math.Pow(2, Math.Min(round, 8)) * 100), MaxBackoffMs);
                 Console.Error.WriteLine(
-                    $"throttled insert (attempt {attempt}/{MaxRetries}): {pending.Count} docs requeued; retrying in {delayMs} ms");
+                    $"throttled insert (throttle {throttleAttempts}/{MaxThrottleRetries}, transient {transientAttempts}/{MaxRetries}): " +
+                    $"{pending.Count} docs requeued; retrying in {delayMs} ms");
                 await Task.Delay(delayMs, ct).ConfigureAwait(false);
             }
-            catch (MongoException ex) when (attempt < MaxRetries && IsTransient(ex))
+            catch (MongoException ex) when (IsTransient(ex) && transientAttempts < MaxRetries)
             {
-                int delayMs = Math.Min((int)(Math.Pow(2, attempt) * 100), MaxBackoffMs);
+                transientAttempts++;
+                int delayMs = Math.Min((int)(Math.Pow(2, Math.Min(round, 8)) * 100), MaxBackoffMs);
                 Console.Error.WriteLine(
-                    $"transient insert error (attempt {attempt}/{MaxRetries}): {ex.Message}; retrying in {delayMs} ms");
+                    $"transient insert error (attempt {transientAttempts}/{MaxRetries}): {ex.Message}; retrying in {delayMs} ms");
                 await Task.Delay(delayMs, ct).ConfigureAwait(false);
             }
         }
     }
+
+    private static bool IsThrottleCode(int code) =>
+        // 16500 = Cosmos RU rate limit (RetryAfterMs); 429 = TooManyRequests;
+        // 13 = transient "Insert error" seen during autoscale ramp / scaling operations;
+        // 16 / 50 = transient command failures Cosmos surfaces under load.
+        code is 16500 or 429 or 13 or 16 or 50;
 
     private static bool IsTransient(MongoException ex) => ex switch
     {
