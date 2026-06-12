@@ -21,6 +21,13 @@ public sealed class ScenarioConfig
     [JsonPropertyName("jobsPerHour")]
     public int JobsPerHour { get; set; }
 
+    /// <summary>
+    /// Optional ramp target. When set, the arrival rate increases linearly from
+    /// <see cref="JobsPerHour"/> to this value over the run (used by S2-stress).
+    /// </summary>
+    [JsonPropertyName("rampToJobsPerHour")]
+    public int? RampToJobsPerHour { get; set; }
+
     [JsonPropertyName("tasksPerJob")]
     public int TasksPerJob { get; set; }
 
@@ -114,5 +121,9 @@ public sealed class ScenarioConfig
         {
             throw new FormatException("Scenario 'workers' and 'poolSize' must be >= 1.");
         }
-    }
-}
+
+        if (RampToJobsPerHour is { } ramp && ramp < JobsPerHour)
+        {
+            throw new FormatException("Scenario 'rampToJobsPerHour' must be >= 'jobsPerHour'.");
+        }
+    }}
