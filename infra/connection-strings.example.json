@@ -1,0 +1,26 @@
+{
+  "_comment": "Redacted template for infra/connection-strings.json (which is git-ignored). Copy to connection-strings.json and fill real credentials. Consumed by seeder/ and loadgen/ (keys: mongoVm, cosmosRu, documentDb).",
+  "mongoVm": "mongodb://bmt_bench:<REDACTED_BENCH_PASSWORD>@10.3.0.4:27017/bmt_db?replicaSet=rs0&authSource=admin",
+  "mongoVmAdmin": "mongodb://bmt_admin:<REDACTED_ADMIN_PASSWORD>@10.3.0.4:27017/admin?replicaSet=rs0&authSource=admin",
+  "cosmosRu": "<set-by-infra>",
+  "documentDb": "<set-by-infra>",
+  "mongoVmDetails": {
+    "vm2PrivateIp": "10.3.0.4",
+    "vm2Hostname": "vm-dbtest-hpc-1",
+    "vm2PublicIp": "(none — private-only VM; use Bastion/jumpbox for ops)",
+    "port": 27017,
+    "replicaSet": "rs0",
+    "database": "bmt_db",
+    "collections": ["calc_input", "calc_output"],
+    "benchUser": "bmt_bench",
+    "benchRoles": "readWrite@bmt_db",
+    "adminUser": "bmt_admin",
+    "authSource": "admin",
+    "profiler": { "level": 1, "slowms": 50 },
+    "indexes": "default _id only on both collections (ReqId intentionally not indexed)",
+    "wiredTigerCache": "default (~50% RAM) — not overridden",
+    "os": "Windows Server 2025 (dbPath E:\\mongo\\data)",
+    "hostFirewall": "inbound TCP 27017 allowed from 10.3.0.0/24",
+    "connectivity": "VM1->VM2 requires NSG allow 27017 from 10.2.0.0/24 + bidirectional VNet peering (see infra/network-connect.sh)"
+  }
+}

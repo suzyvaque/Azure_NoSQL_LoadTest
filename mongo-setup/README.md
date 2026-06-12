@@ -35,10 +35,22 @@ Install and configure MongoDB 7 on VM2 and create required indexes on all three 
 
 ## To be added
 
-- `install-mongo.sh` (apt repo, install, systemd, RS initiate). _(deferred — Mongo VM is a later task)_
-- `mongod.conf` template. _(deferred)_
+- `install-mongo.ps1` (data-disk prep, MSI install, service, RS initiate, users, profiler, firewall). ✅
+  _Realized on a Windows Server 2025 VM2; this replaces the originally planned `install-mongo.sh`._
+- `mongod.conf` template. ✅ _(YAML; on Windows mongod reads it as `...\Server\7.0\bin\mongod.cfg`)_
 - `create-indexes.js` runnable via `mongosh --file` against any backend conn string. ✅
 - `verify.sh` that prints version, RS status, index list, profiler level. ✅
+
+## Realized VM2 (MongoDB-on-VM backend)
+
+The provisioned VM2 is **Windows Server 2025** (32 vCPU / 256 GB RAM / 512 GB premium SSD data
+disk), so the Linux spec steps were executed via Windows equivalents (NTFS data volume,
+Windows Service, Defender Firewall, keyFile for replica-set internal auth). Verified state:
+MongoDB 7.0.x, replica set `rs0` PRIMARY, auth enabled, default WiredTiger cache (untouched),
+profiler level 1 / slowms 50, and `bmt_db.calc_input` / `bmt_db.calc_output` with the `_id_`
+index only. Redacted connection details live in
+[`infra/connection-strings.example.json`](../infra/connection-strings.example.json); real
+credentials go in the git-ignored `infra/connection-strings.json`.
 
 ## Usage (DocumentDB / Cosmos / Mongo VM)
 
