@@ -1,0 +1,24 @@
+# provisioning/datasources.yml — Grafana data source provisioning.
+# Copy to /etc/grafana/provisioning/datasources/ (Linux) or the Grafana provisioning
+# datasources folder on Windows, then restart Grafana.
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://localhost:9090
+    isDefault: true
+    jsonData:
+      timeInterval: 5s
+
+  # Azure Monitor data source for Cosmos DB (RU) and DocumentDB (vCore) backend metrics.
+  # Fill in the managed identity / app registration details in Grafana, or set them here.
+  - name: Azure Monitor
+    type: grafana-azure-monitor-datasource
+    access: proxy
+    jsonData:
+      azureAuthType: msi
+    # For app-registration auth instead of MSI, configure tenantId/clientId in Grafana UI
+    # and store the secret via secureJsonData.

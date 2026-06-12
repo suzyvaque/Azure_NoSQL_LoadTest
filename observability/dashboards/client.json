@@ -1,0 +1,116 @@
+{
+  "title": "BMT — Client view",
+  "uid": "bmt-client",
+  "tags": ["bmt"],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "backend",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "query": "label_values(bmt_ops_total, backend)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true
+      },
+      {
+        "name": "scenario",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "query": "label_values(bmt_ops_total, scenario)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Ops/sec by op",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "ops" } },
+      "targets": [
+        {
+          "expr": "sum(rate(bmt_ops_total{backend=~\"$backend\", scenario=~\"$scenario\"}[1m])) by (op)",
+          "legendFormat": "{{op}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "find latency percentiles",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "ms" } },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(bmt_op_latency_ms_bucket{op=\"find\", backend=~\"$backend\", scenario=~\"$scenario\"}[1m])) by (le))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, sum(rate(bmt_op_latency_ms_bucket{op=\"find\", backend=~\"$backend\", scenario=~\"$scenario\"}[1m])) by (le))", "legendFormat": "p95" },
+        { "expr": "histogram_quantile(0.99, sum(rate(bmt_op_latency_ms_bucket{op=\"find\", backend=~\"$backend\", scenario=~\"$scenario\"}[1m])) by (le))", "legendFormat": "p99" },
+        { "expr": "histogram_quantile(0.999, sum(rate(bmt_op_latency_ms_bucket{op=\"find\", backend=~\"$backend\", scenario=~\"$scenario\"}[1m])) by (le))", "legendFormat": "p99.9" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "write latency p99 (insert/delete)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "ms" } },
+      "targets": [
+        { "expr": "histogram_quantile(0.99, sum(rate(bmt_op_latency_ms_bucket{op=~\"insert|delete\", backend=~\"$backend\", scenario=~\"$scenario\"}[1m])) by (le, op))", "legendFormat": "{{op}} p99" }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Error & retry rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "ops" } },
+      "targets": [
+        { "expr": "sum(rate(bmt_errors_total{backend=~\"$backend\", scenario=~\"$scenario\"}[1m])) by (op)", "legendFormat": "err {{op}}" },
+        { "expr": "sum(rate(bmt_retries_total{backend=~\"$backend\", scenario=~\"$scenario\"}[1m]))", "legendFormat": "retries" }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "In-flight ops",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "sum(bmt_in_flight{backend=~\"$backend\", scenario=~\"$scenario\"})", "legendFormat": "in-flight" }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Worker queue depth",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "sum(bmt_worker_queue_depth{backend=~\"$backend\", scenario=~\"$scenario\"})", "legendFormat": "queue depth" }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Dispatcher backpressure / pool exhaustion",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "sum(rate(bmt_dispatcher_backpressure_total{backend=~\"$backend\", scenario=~\"$scenario\"}[1m]))", "legendFormat": "backpressure/s" },
+        { "expr": "sum(rate(bmt_pool_exhaustion_total{backend=~\"$backend\", scenario=~\"$scenario\"}[1m]))", "legendFormat": "pool-exhaust/s" }
+      ]
+    }
+  ]
+}

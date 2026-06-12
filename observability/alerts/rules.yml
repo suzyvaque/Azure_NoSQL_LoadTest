@@ -1,0 +1,58 @@
+# alerts/rules.yml — BMT alerting rules.
+#
+# Thresholds from observability/README.md:
+#   - error rate > 0.1 %
+#   - p99 find  > 50 ms
+#   - p99 insert/delete > 100 ms
+#   - any throttle / pool exhaustion
+
+groups:
+  - name: bmt-client
+    rules:
+      - alert: BmtErrorRateHigh
+        expr: |
+          (sum(rate(bmt_errors_total[1m])) by (backend, scenario))
+          /
+          clamp_min(sum(rate(bmt_ops_total[1m])) by (backend, scenario), 1)
+          > 0.001
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Error rate > 0.1% ({{ $labels.backend }}/{{ $labels.scenario }})"
+          description: "Client-side error rate exceeded 0.1% for 2 minutes."
+
+      - alert: BmtFindP99High
+        expr: |
+          histogram_quantile(
+            0.99,
+            sum(rate(bmt_op_latency_ms_bucket{op="find"}[1m])) by (le, backend, scenario)
+          ) > 50
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "find p99 > 50 ms ({{ $labels.backend }}/{{ $labels.scenario }})"
+          description: "find p99 latency exceeded 50 ms for 2 minutes."
+
+      - alert: BmtWriteP99High
+        expr: |
+          histogram_quantile(
+            0.99,
+            sum(rate(bmt_op_latency_ms_bucket{op=~"insert|delete"}[1m])) by (le, backend, scenario, op)
+          ) > 100
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.op }} p99 > 100 ms ({{ $labels.backend }}/{{ $labels.scenario }})"
+          description: "Write-op p99 latency exceeded 100 ms for 2 minutes."
+
+      - alert: BmtPoolExhaustion
+        expr: increase(bmt_pool_exhaustion_total[1m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Connection pool exhaustion ({{ $labels.backend }}/{{ $labels.scenario }})"
+          description: "Workers are waiting on the connection pool; raise pool size or reduce workers."

@@ -1,0 +1,89 @@
+{
+  "title": "BMT — Mongo VM view",
+  "uid": "bmt-mongo-vm",
+  "tags": ["bmt"],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "CPU utilization",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "percentunit" } },
+      "targets": [
+        { "expr": "1 - avg(rate(node_cpu_seconds_total{mode=\"idle\", host=\"vm2\"}[1m]))", "legendFormat": "cpu busy" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Memory used",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "targets": [
+        { "expr": "node_memory_MemTotal_bytes{host=\"vm2\"} - node_memory_MemAvailable_bytes{host=\"vm2\"}", "legendFormat": "used" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Disk IOPS",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "iops" } },
+      "targets": [
+        { "expr": "sum(rate(node_disk_reads_completed_total{host=\"vm2\"}[1m]))", "legendFormat": "reads" },
+        { "expr": "sum(rate(node_disk_writes_completed_total{host=\"vm2\"}[1m]))", "legendFormat": "writes" }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Disk throughput",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "Bps" } },
+      "targets": [
+        { "expr": "sum(rate(node_disk_read_bytes_total{host=\"vm2\"}[1m]))", "legendFormat": "read B/s" },
+        { "expr": "sum(rate(node_disk_written_bytes_total{host=\"vm2\"}[1m]))", "legendFormat": "write B/s" }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "mongod opcounters",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "sum(rate(mongodb_op_counters_total{host=\"vm2\"}[1m])) by (type)", "legendFormat": "{{type}}" }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "mongod connections",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "mongodb_connections{host=\"vm2\", state=\"current\"}", "legendFormat": "current" }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "WiredTiger cache dirty %",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "percentunit" } },
+      "targets": [
+        { "expr": "mongodb_wiredtiger_cache_dirty_bytes{host=\"vm2\"} / clamp_min(mongodb_wiredtiger_cache_max_bytes{host=\"vm2\"}, 1)", "legendFormat": "dirty %" }
+      ]
+    }
+  ]
+}

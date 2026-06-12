@@ -1,0 +1,68 @@
+{
+  "title": "BMT — Backend comparison",
+  "uid": "bmt-comparison",
+  "tags": ["bmt"],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "scenario",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "query": "label_values(bmt_ops_total, scenario)",
+        "refresh": 2,
+        "includeAll": false
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Ops/sec by backend",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "ops" } },
+      "targets": [
+        { "expr": "sum(rate(bmt_ops_total{scenario=~\"$scenario\"}[1m])) by (backend)", "legendFormat": "{{backend}}" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "find p99 by backend",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "ms" } },
+      "targets": [
+        { "expr": "histogram_quantile(0.99, sum(rate(bmt_op_latency_ms_bucket{op=\"find\", scenario=~\"$scenario\"}[1m])) by (le, backend))", "legendFormat": "{{backend}}" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "insert p99 by backend",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "ms" } },
+      "targets": [
+        { "expr": "histogram_quantile(0.99, sum(rate(bmt_op_latency_ms_bucket{op=\"insert\", scenario=~\"$scenario\"}[1m])) by (le, backend))", "legendFormat": "{{backend}}" }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Error rate by backend",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": { "defaults": { "unit": "percentunit" } },
+      "targets": [
+        { "expr": "sum(rate(bmt_errors_total{scenario=~\"$scenario\"}[1m])) by (backend) / clamp_min(sum(rate(bmt_ops_total{scenario=~\"$scenario\"}[1m])) by (backend), 1)", "legendFormat": "{{backend}}" }
+      ]
+    }
+  ]
+}

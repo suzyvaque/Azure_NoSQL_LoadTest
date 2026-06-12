@@ -1,0 +1,45 @@
+# prometheus.yml — BMT scrape configuration for VM1 (native binary, no Docker).
+#
+# Run natively (Linux):
+#   ./prometheus --config.file=prometheus.yml --storage.tsdb.path=/var/lib/prometheus
+# Run natively (Windows):
+#   .\prometheus.exe --config.file=prometheus.yml --storage.tsdb.path=C:\prometheus\data
+#
+# Grafana (already installed on VM1) points at this Prometheus via provisioning/datasources.yml.
+# Replace the vm1/vm2 placeholders with the private IPs/DNS emitted by infra/.
+
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+  external_labels:
+    monitor: bmt
+
+rule_files:
+  - alerts/rules.yml
+
+scrape_configs:
+  # Load generator (this VM). One process per run; backend/scenario arrive as metric labels.
+  - job_name: loadgen
+    static_configs:
+      - targets: ["localhost:9100"]
+        labels:
+          host: vm1
+
+  # MongoDB target VM — host metrics.
+  - job_name: node_exporter
+    static_configs:
+      - targets: ["vm2:9100"]
+        labels:
+          host: vm2
+
+  # MongoDB target VM — mongod metrics.
+  - job_name: mongodb_exporter
+    static_configs:
+      - targets: ["vm2:9216"]
+        labels:
+          host: vm2
+
+  # Prometheus self-monitoring.
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

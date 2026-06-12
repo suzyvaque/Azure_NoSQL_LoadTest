@@ -1,0 +1,17 @@
+# provisioning/dashboards.yml — Grafana dashboard provisioning.
+# Copy to /etc/grafana/provisioning/dashboards/ (Linux) or the Grafana provisioning
+# dashboards folder on Windows. Point `path` at the folder holding the dashboard JSON.
+
+apiVersion: 1
+
+providers:
+  - name: bmt
+    orgId: 1
+    folder: BMT
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards/bmt
+      foldersFromFilesStructure: false
