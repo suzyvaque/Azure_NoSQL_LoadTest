@@ -1,0 +1,37 @@
+# BMT run report — {{ report.run_id }}
+
+- Backend: **{{ report.backend }}**
+- Scenario: **{{ report.scenario }}**
+{% if report.summary %}
+- Window: {{ report.summary.get("StartedAtUtc", "?") }} → {{ report.summary.get("EndedAtUtc", "?") }}
+- Duration: {{ report.summary.get("DurationSeconds", "?") }} s
+- Total ops: {{ report.summary.get("TotalOps", "?") }} ({{ report.summary.get("OpsPerSecond", "?") }} ops/s, {{ report.summary.get("TasksPerSecond", "?") }} tasks/s)
+- Error rate: {{ report.summary.get("ErrorRate", "?") }}
+- Host: {{ report.summary.get("Host", "?") }} ({{ report.summary.get("ProcessorCount", "?") }} cores)
+{% endif %}
+
+## Latency (ms)
+
+| op | count | errors | {% for p in percentiles %}p{{ p }} | {% endfor %}max |
+|---|---:|---:|{% for p in percentiles %}---:|{% endfor %}---:|
+{% for s in report.op_stats %}
+| {{ s.op }} | {{ s.count }} | {{ s.errors }} | {% for p in percentiles %}{{ "%.2f"|format(s.percentiles_ms[p]) }} | {% endfor %}{{ "%.2f"|format(s.max_ms) }} |
+{% endfor %}
+
+{% if report.error_breakdown %}
+## Errors by code
+
+{% for code, n in report.error_breakdown.items() %}
+- `{{ code }}`: {{ n }}
+{% endfor %}
+{% else %}
+No errors recorded in the sampled records.
+{% endif %}
+
+## Charts
+
+- `charts/throughput.png` — estimated ops/sec over time.
+- `charts/latency_hist.png` — sampled latency distribution per op.
+
+> Latency percentiles are computed from the 10% raw sample. Throughput is scaled by 1/0.10.
+> Authoritative totals are in `summary.json`.
