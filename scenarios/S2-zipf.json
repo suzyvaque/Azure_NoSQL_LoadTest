@@ -1,0 +1,19 @@
+{
+  "$schema": "./schema.json",
+  "name": "S2-zipf",
+  "description": "S2 prod peak with Zipfian key skew (s=1.1) to model hot documents.",
+  "durationMinutes": 60,
+  "jobsPerHour": 1099,
+  "tasksPerJob": 441,
+  "arrival": "poisson",
+  "workers": 500,
+  "poolSize": 500,
+  "distribution": "zipfian",
+  "zipfExponent": 1.1,
+  "idRange": [1, 1000000],
+  "thinkMsMin": 50,
+  "thinkMsMax": 250,
+  "writeConcern": "w1",
+  "warmupMinutes": 5,
+  "warmupFractionOfTarget": 0.10
+}

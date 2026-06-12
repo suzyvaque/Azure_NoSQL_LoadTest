@@ -1,0 +1,18 @@
+{
+  "$schema": "./schema.json",
+  "name": "S3",
+  "description": "Fat jobs: 89 jobs/hr x 491 tasks/job.",
+  "durationMinutes": 60,
+  "jobsPerHour": 89,
+  "tasksPerJob": 491,
+  "arrival": "poisson",
+  "workers": 100,
+  "poolSize": 100,
+  "distribution": "uniform",
+  "idRange": [1, 1000000],
+  "thinkMsMin": 50,
+  "thinkMsMax": 250,
+  "writeConcern": "w1",
+  "warmupMinutes": 5,
+  "warmupFractionOfTarget": 0.10
+}

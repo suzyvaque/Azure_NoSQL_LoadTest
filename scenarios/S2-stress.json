@@ -1,0 +1,19 @@
+{
+  "$schema": "./schema.json",
+  "name": "S2-stress",
+  "description": "Ramp from S2 (1099) up to 6600 jobs/hr over the run to find saturation.",
+  "durationMinutes": 60,
+  "jobsPerHour": 1099,
+  "rampToJobsPerHour": 6600,
+  "tasksPerJob": 441,
+  "arrival": "poisson",
+  "workers": 2000,
+  "poolSize": 2000,
+  "distribution": "uniform",
+  "idRange": [1, 1000000],
+  "thinkMsMin": 50,
+  "thinkMsMax": 250,
+  "writeConcern": "w1",
+  "warmupMinutes": 5,
+  "warmupFractionOfTarget": 0.10
+}

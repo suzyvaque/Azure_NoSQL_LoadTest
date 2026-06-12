@@ -1,0 +1,18 @@
+{
+  "$schema": "./schema.json",
+  "name": "S2-burst",
+  "description": "3x S2 burst: 3300 jobs/hr x 441 tasks/job for 30 minutes.",
+  "durationMinutes": 30,
+  "jobsPerHour": 3300,
+  "tasksPerJob": 441,
+  "arrival": "poisson",
+  "workers": 1000,
+  "poolSize": 1000,
+  "distribution": "uniform",
+  "idRange": [1, 1000000],
+  "thinkMsMin": 50,
+  "thinkMsMax": 250,
+  "writeConcern": "w1",
+  "warmupMinutes": 5,
+  "warmupFractionOfTarget": 0.10
+}
