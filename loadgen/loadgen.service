@@ -1,0 +1,49 @@
+# loadgen.service — systemd unit for the BMT load generator (VM1).
+#
+# Install:
+#   sudo cp loadgen.service /etc/systemd/system/loadgen@.service
+#   sudo systemctl daemon-reload
+#
+# This is a templated unit: the instance name selects an environment file under
+# /etc/bmt/<instance>.env that defines BMT_CONN and the run arguments. Example:
+#
+#   /etc/bmt/S2_docdb.env:
+#     BMT_CONN=mongodb+srv://...
+#     BMT_BACKEND=DocDb
+#     BMT_SCENARIO=/opt/bmt/scenarios/S2.json
+#     BMT_RUN_ID=2026-06-13_S2_docdb
+#     BMT_EXTRA_ARGS=--metrics-port 9100
+#
+# Start:
+#   sudo systemctl start loadgen@S2_docdb
+#   journalctl -u loadgen@S2_docdb -f
+#
+# Stop (graceful drain via SIGTERM):
+#   sudo systemctl stop loadgen@S2_docdb
+
+[Unit]
+Description=BMT load generator (%i)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bmt
+Group=bmt
+WorkingDirectory=/opt/bmt
+EnvironmentFile=/etc/bmt/%i.env
+ExecStart=/usr/bin/dotnet /opt/bmt/loadgen.dll \
+  --backend ${BMT_BACKEND} \
+  --scenario ${BMT_SCENARIO} \
+  --run-id ${BMT_RUN_ID} \
+  --runs-root /opt/bmt/runs \
+  ${BMT_EXTRA_ARGS}
+
+# Graceful shutdown: SIGTERM drains in-flight work and flushes artifacts.
+KillSignal=SIGTERM
+TimeoutStopSec=120
+Restart=no
+LimitNOFILE=1048576
+
+[Install]
+WantedBy=multi-user.target
