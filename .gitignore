@@ -222,3 +222,24 @@ __marimo__/
 
 # Test Log
 BMT_ref/
+
+# .NET build output
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Run artifacts (large, machine-generated)
+runs/*
+!runs/README.md
+!runs/.gitkeep
+
+# Secrets / local config
+infra/connection-strings.json
+**/*.local.json
+**/secrets.*
+
+# OS
+.DS_Store
+Thumbs.db
